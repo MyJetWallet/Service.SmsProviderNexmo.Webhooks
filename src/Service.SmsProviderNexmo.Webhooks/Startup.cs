@@ -44,6 +44,8 @@ namespace Service.SmsProviderNexmo.Webhooks
 
             app.BindIsAlive();
 
+            app.UseMiddleware<WebhookMiddleware>();
+
             app.UseEndpoints(endpoints =>
             {
                 endpoints.MapGrpcSchemaRegistry();
