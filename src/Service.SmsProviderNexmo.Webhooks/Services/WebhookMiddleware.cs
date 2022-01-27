@@ -1,9 +1,13 @@
 ﻿using System;
 using System.IO;
+using System.Linq;
 using System.Text.Json;
 using System.Threading.Tasks;
+using System.Web;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
+using MyJetWallet.Sdk.ServiceBus;
+using Service.SmsProviderNexmo.Domain.Models;
 
 namespace Service.SmsProviderNexmo.Webhooks.Services
 {
@@ -11,13 +15,15 @@ namespace Service.SmsProviderNexmo.Webhooks.Services
     {
         private readonly RequestDelegate _next;
         private readonly ILogger<WebhookMiddleware> _logger;
+        private readonly IServiceBusPublisher<NexmoSmsDeliveryReportMessage> _publisher;
 
         public WebhookMiddleware(
             RequestDelegate next,
-            ILogger<WebhookMiddleware> logger)
+            ILogger<WebhookMiddleware> logger, IServiceBusPublisher<NexmoSmsDeliveryReportMessage> publisher)
         {
             _next = next;
             _logger = logger;
+            _publisher = publisher;
         }
 
         /// <summary>
@@ -53,6 +59,21 @@ namespace Service.SmsProviderNexmo.Webhooks.Services
                 using var reader = new StreamReader(buffer);
 
                 body = await reader.ReadToEndAsync();
+
+                var queryString = HttpUtility.ParseQueryString(body);
+                var temp =  queryString.AllKeys.ToDictionary(k => k, k => queryString[k]);
+
+                await _publisher.PublishAsync(new NexmoSmsDeliveryReportMessage
+                {
+                    PhoneNumber = temp["msisdn"],
+                    NetworkCode = temp["network-code"],
+                    MessageId = temp["messageId"],
+                    Price = temp["price"],
+                    Status = temp["status"],
+                    ErrorCode = temp["err-code"],
+                    MessageTimestamp = DateTime.Parse(temp["message-timestamp"])
+                });
+
             }
 
             var query = context.Request.QueryString;

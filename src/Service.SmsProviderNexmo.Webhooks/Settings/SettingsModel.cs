@@ -13,5 +13,8 @@ namespace Service.SmsProviderNexmo.Webhooks.Settings
 
         [YamlProperty("SmsProviderNexmoWebhooks.ElkLogs")]
         public LogElkSettings ElkLogs { get; set; }
+        
+        [YamlProperty("SmsProviderNexmoWebhooks.SpotServiceBusHostPort")]
+        public string SpotServiceBusHostPort { get; set; }
     }
 }
